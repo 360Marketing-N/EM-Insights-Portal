@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login Portal</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+    }
+    body {
+      min-height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+    .container {
+      max-width: 400px;
+      margin: 80px auto;
+      background: #fff;
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 { text-align: center; }
+    .hidden { display: none; }
+    input { width: 100%; margin: 8px 0; padding: 8px; }
+    button { width: 100%; padding: 10px; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer;}
+    .error { color: red; text-align: center; }
+    .success { color: green; text-align: center; }
+    .link { text-align: center; margin-top: 10px; }
+    .link a { color: #0078d4; text-decoration: none; font-size: 0.95em; }
+    .link a:hover { text-decoration: underline; }
+    .remember-me-container {
+      margin: 10px 0 18px 0;
+      display: flex;
+      align-items: center;
+    }
+    .remember-me-container label {
+      margin-left: 8px;
+      font-size: 0.98em;
+      color: #333;
+      user-select: none;
+      cursor: pointer;
+    }
+    /* Full screen Power BI report styles */
+    #report-container {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #fff;
+      box-shadow: none;
+      border-radius: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0;
+    }
+    #report-container.hidden {
+      display: none !important;
+    }
+    #report-container h2 {
+      margin-top: 40px;
+      margin-bottom: 20px;
+      font-size: 2em;
+      font-weight: bold;
+    }
+    #logout-btn {
+      width: 200px;
+      padding: 14px;
+      background: #888;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    #powerbi-frame {
+      flex: 1;
+      width: 90vw;
+      height: 75vh;
+      max-width: 1400px;
+      margin-bottom: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      border: none;
+      background: #f4f4f4;
+      /* Allow full screen in iframe */
+      allowfullscreen: true;
+    }
+    /* Responsive for mobile */
+    @media (max-width: 600px) {
+      .container { max-width: 95vw; margin: 10vw auto; padding: 6vw 2vw; }
+      #report-container h2 { margin-top: 18px; font-size: 1.2em;}
+      #powerbi-frame { width: 98vw; height: 60vh;}
+      #logout-btn { width: 90vw; font-size: 1em;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="login-container">
+    <h2>Login</h2>
+    <div class="error" id="login-error"></div>
+    <div class="success" id="login-success"></div>
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <div class="remember-me-container">
+      <input type="checkbox" id="remember-me" />
+      <label for="remember-me">Remember Me</label>
+    </div>
+    <button id="login-btn">Login</button>
+    <div class="link">
+      <a href="#" id="forgot-password-link">Forgot password?</a>
+    </div>
+  </div>
+
+  <div class="container hidden" id="reset-container">
+    <h2>Reset Password</h2>
+    <div class="error" id="reset-error"></div>
+    <div class="success" id="reset-success"></div>
+    <input type="email" id="reset-email" placeholder="Enter your email" required />
+    <button id="reset-btn">Send Reset Email</button>
+    <div class="link">
+      <a href="#" id="back-to-login-link">Back to login</a>
+    </div>
+  </div>
+
+  <div class="hidden" id="report-container">
+    <h2>Power BI Report</h2>
+    <button id="logout-btn">Logout</button>
+    <iframe id="powerbi-frame" src="" allowfullscreen="true"></iframe>
+  </div>
+  <script>
+    // --- Replace with your Firebase config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDIGlvnD8ZXj0nDr8zV3j_uYHQ4f5wmnz4",
+      authDomain: "powerbi-portal-cb81a.firebaseapp.com",
+      projectId: "powerbi-portal-cb81a",
+      storageBucket: "powerbi-portal-cb81a.appspot.com",
+      messagingSenderId: "596138110128",
+      appId: "1:596138110128:web:7459698c3e87c2df3f5f75",
+      measurementId: "G-3MSCDSB0QN"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+
+    // --- Power BI Embed Link (VIEW ONLY) ---
+    const powerBiEmbedUrl = "https://app.powerbi.com/view?r=eyJrIjoiNWFiZGNmZGMtZGU0My00ZjlhLTk2YTMtNTQzMzc5ZTkwYTgwIiwidCI6ImY5ZmRkNTYwLTY2MzctNDFkZS1hYmNhLWY1OWZhM2YwNzdiZSIsImMiOjR9";
+    // Elements
+    const loginContainer = document.getElementById("login-container");
+    const reportContainer = document.getElementById("report-container");
+    const resetContainer = document.getElementById("reset-container");
+
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const forgotPasswordLink = document.getElementById("forgot-password-link");
+    const backToLoginLink = document.getElementById("back-to-login-link");
+    const resetBtn = document.getElementById("reset-btn");
+
+    const loginError = document.getElementById("login-error");
+    const loginSuccess = document.getElementById("login-success");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const rememberMeCheckbox = document.getElementById("remember-me");
+    const powerBiFrame = document.getElementById("powerbi-frame");
+
+    const resetEmailInput = document.getElementById("reset-email");
+    const resetError = document.getElementById("reset-error");
+    const resetSuccess = document.getElementById("reset-success");
+
+    // Always start on login screen!
+    window.onload = function() {
+      loginContainer.classList.remove("hidden");
+      resetContainer.classList.add("hidden");
+      reportContainer.classList.add("hidden");
+      powerBiFrame.src = "";
+      passwordInput.value = "";
+      loginError.textContent = "";
+      loginSuccess.textContent = "";
+
+      // Prefill email if saved in localStorage
+      const savedEmail = localStorage.getItem('savedEmail');
+      if (savedEmail) {
+        emailInput.value = savedEmail;
+      } else {
+        emailInput.value = "";
+      }
+    };
+
+    // Login
+    loginBtn.onclick = async function() {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      loginError.textContent = "";
+      loginSuccess.textContent = "";
+
+      try {
+        const persistence = rememberMeCheckbox.checked
+          ? firebase.auth.Auth.Persistence.LOCAL
+          : firebase.auth.Auth.Persistence.SESSION;
+        await auth.setPersistence(persistence);
+        await auth.signInWithEmailAndPassword(email, password);
+
+        // Save the email to localStorage for auto-fill
+        localStorage.setItem('savedEmail', email);
+        // Success, UI will update via onAuthStateChanged
+      } catch (e) {
+        loginError.textContent = e.message;
+      }
+    };
+
+    // Logout
+    logoutBtn.onclick = function() {
+      auth.signOut().then(() => {
+        loginContainer.classList.remove("hidden");
+        reportContainer.classList.add("hidden");
+        resetContainer.classList.add("hidden");
+        powerBiFrame.src = "";
+        // Don't clear savedEmail here to allow auto-fill on next login
+        emailInput.value = localStorage.getItem('savedEmail') || "";
+        passwordInput.value = "";
+        loginError.textContent = "";
+        loginSuccess.textContent = "";
+      }).catch((e) => {
+        console.error("Sign out error:", e);
+        alert("Error during logout: " + e.message);
+      });
+    };
+
+    // Forgot Password
+    forgotPasswordLink.onclick = function(e) {
+      e.preventDefault();
+      loginContainer.classList.add("hidden");
+      resetContainer.classList.remove("hidden");
+      resetEmailInput.value = emailInput.value;
+      resetError.textContent = "";
+      resetSuccess.textContent = "";
+    };
+
+    // Back to Login
+    backToLoginLink.onclick = function(e) {
+      e.preventDefault();
+      resetContainer.classList.add("hidden");
+      loginContainer.classList.remove("hidden");
+      loginError.textContent = "";
+      loginSuccess.textContent = "";
+    };
+
+    // Send Reset Email
+    resetBtn.onclick = async function() {
+      const email = resetEmailInput.value;
+      resetError.textContent = "";
+      resetSuccess.textContent = "";
+      if (!email) {
+        resetError.textContent = "Please enter your email address.";
+        return;
+      }
+      try {
+        await auth.sendPasswordResetEmail(email);
+        resetSuccess.textContent = "Password reset email sent! Check your inbox.";
+      } catch (e) {
+        resetError.textContent = e.message;
+      }
+    };
+
+    // --- AUTO LOGOUT ON INACTIVITY (15 MINUTES) ---
+    let inactivityTimer = null;
+    const logoutAfter = 15 * 60 * 1000; // 15 minutes
+    const activityEvents = ["click", "mousemove", "keypress", "scroll", "touchstart"];
+
+    function startInactivityTimer() {
+      clearInactivityTimer();
+      inactivityTimer = setTimeout(() => {
+        if (auth.currentUser) {
+          auth.signOut();
+          alert("You have been logged out due to inactivity.");
+        }
+      }, logoutAfter);
+    }
+
+    function clearInactivityTimer() {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = null;
+      }
+    }
+
+    function addActivityListeners() {
+      activityEvents.forEach((evt) => {
+        window.addEventListener(evt, startInactivityTimer);
+      });
+    }
+
+    function removeActivityListeners() {
+      activityEvents.forEach((evt) => {
+        window.removeEventListener(evt, startInactivityTimer);
+      });
+    }
+
+    // Listen for auth state changes
+    auth.onAuthStateChanged(function(user) {
+      if (user) {
+        // Show report screen
+        loginContainer.classList.add("hidden");
+        resetContainer.classList.add("hidden");
+        reportContainer.classList.remove("hidden");
+        powerBiFrame.src = powerBiEmbedUrl;
+        // --- Start inactivity timer for logged in user ---
+        startInactivityTimer();
+        addActivityListeners();
+      } else {
+        // Show login screen
+        powerBiFrame.src = "";
+        reportContainer.classList.add("hidden");
+        loginContainer.classList.remove("hidden");
+        resetContainer.classList.add("hidden");
+        // Re-fill email input with saved email (if any)
+        emailInput.value = localStorage.getItem('savedEmail') || "";
+        passwordInput.value = "";
+        loginError.textContent = "";
+        loginSuccess.textContent = "";
+        // --- Stop inactivity timer and remove listeners ---
+        clearInactivityTimer();
+        removeActivityListeners();
+      }
+    });
+  </script>
+</body>
+</html>
