@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Login Portal</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body {
       height: 100%;
@@ -30,10 +30,8 @@
     }
     h2 { text-align: center; }
     .hidden { display: none; }
-    input { width: 100%; margin: 8px 0; padding: 12px; font-size: 16px; border: 1px solid #ddd; border-radius: 4px; }
-    button { width: 100%; padding: 12px; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; touch-action: manipulation; }
-    button:hover { background: #106ebe; }
-    button:active { transform: translateY(1px); }
+    input { width: 100%; margin: 8px 0; padding: 8px; }
+    button { width: 100%; padding: 10px; background: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer;}
     .error { color: red; text-align: center; }
     .success { color: green; text-align: center; }
     .link { text-align: center; margin-top: 10px; }
@@ -51,7 +49,7 @@
       user-select: none;
       cursor: pointer;
     }
-    /* Full screen Power BI report styles */
+    /* Report container styles */
     #report-container {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -63,76 +61,77 @@
       z-index: 100;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       justify-content: flex-start;
       padding: 0;
     }
     #report-container.hidden {
       display: none !important;
     }
-    #report-container h2 {
-      margin-top: 40px;
-      margin-bottom: 20px;
-      font-size: 2em;
+    #top-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 0 0 0;
+      gap: 16px;
+      background: #fff;
+      z-index: 101;
+    }
+    #report-heading {
+      margin: 0 12px 0 0;
+      font-size: 1.2em;
       font-weight: bold;
+      color: #0078d4;
     }
     #logout-btn, #fullscreen-btn {
-      width: 200px;
-      padding: 14px;
+      width: 120px;
+      padding: 10px;
       background: #888;
       color: #fff;
       border: none;
-      border-radius: 8px;
-      font-size: 1.2em;
+      border-radius: 6px;
+      font-size: 1em;
       cursor: pointer;
-      margin: 0 10px 20px 10px;
+      margin: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: background 0.2s;
     }
     #fullscreen-btn {
       background: #0078d4;
+      margin-left: 0;
     }
+    #logout-btn:hover,
     #fullscreen-btn:hover {
-      background: #106ebe;
-    }
-    .button-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
+      background: #005a9e;
     }
     #powerbi-frame {
       flex: 1;
       width: 100vw;
-      height: 100vh;
-      max-width: 100vw;
-      margin-bottom: 0;
+      height: 100%;
       border-radius: 0;
       box-shadow: none;
       border: none;
       background: #f4f4f4;
+      display: block;
+      margin: 0;
     }
-    /* Responsive for mobile */
     @media (max-width: 600px) {
       .container { max-width: 95vw; margin: 10vw auto; padding: 6vw 2vw; }
-      #report-container h2 { display: none; } /* Hide heading on mobile */
-      #powerbi-frame { width: 100vw; height: 100vh; }
-      #logout-btn, #fullscreen-btn { 
-        width: 45vw; 
-        font-size: 1em;
-        padding: 16px;
-        margin: 5px;
+      #top-bar {
+        flex-direction: column;
+        gap: 10px;
+        padding: 8px 0 0 0;
       }
-      .button-container {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1000;
-        background: rgba(255,255,255,0.9);
-        padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      #report-heading { font-size: 1em; margin: 0 0 6px 0; }
+      #logout-btn, #fullscreen-btn {
+        width: 94vw;
+        font-size: 0.98em;
+        margin-bottom: 4px;
+      }
+      #powerbi-frame {
+        width: 100vw;
+        height: 100%;
       }
     }
   </style>
@@ -166,16 +165,16 @@
   </div>
 
   <div class="hidden" id="report-container">
-    <h2>Power BI Report</h2>
-    <div class="button-container">
-      <button id="logout-btn">Logout</button>
+    <div id="top-bar">
+      <span id="report-heading">Power BI Report</span>
       <button id="fullscreen-btn">Full Screen</button>
+      <button id="logout-btn">Logout</button>
     </div>
     <iframe id="powerbi-frame"
       src=""
       allowfullscreen="true"
       allow="fullscreen; clipboard-read; clipboard-write; encrypted-media; accelerometer; gyroscope; picture-in-picture"
-      ></iframe>
+    ></iframe>
   </div>
   <script>
     // --- Replace with your Firebase config ---
@@ -278,34 +277,16 @@
       });
     };
 
-    // Fullscreen functionality
+    // Fullscreen button logic
     fullscreenBtn.onclick = function() {
-      if (!document.fullscreenElement) {
-        // Enter fullscreen
-        document.documentElement.requestFullscreen().then(() => {
-          fullscreenBtn.textContent = "Exit Full Screen";
-        }).catch((e) => {
-          console.error("Error entering fullscreen:", e);
-          alert("Fullscreen not supported or failed");
-        });
-      } else {
-        // Exit fullscreen
-        document.exitFullscreen().then(() => {
-          fullscreenBtn.textContent = "Full Screen";
-        }).catch((e) => {
-          console.error("Error exiting fullscreen:", e);
-        });
+      if (powerBiFrame.requestFullscreen) {
+        powerBiFrame.requestFullscreen();
+      } else if (powerBiFrame.webkitRequestFullscreen) { // Safari
+        powerBiFrame.webkitRequestFullscreen();
+      } else if (powerBiFrame.msRequestFullscreen) { // IE11
+        powerBiFrame.msRequestFullscreen();
       }
     };
-
-    // Update fullscreen button text when fullscreen changes
-    document.addEventListener('fullscreenchange', function() {
-      if (document.fullscreenElement) {
-        fullscreenBtn.textContent = "Exit Full Screen";
-      } else {
-        fullscreenBtn.textContent = "Full Screen";
-      }
-    });
 
     // Forgot Password
     forgotPasswordLink.onclick = function(e) {
