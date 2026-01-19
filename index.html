@@ -192,6 +192,7 @@
     <div class="report-btns">
       <button class="report-card-btn" id="report-btn-main">Annual Quantitative Employee Dashboard</button>
       <button class="report-card-btn" id="report-btn-second">Quarterly Public Perception Tracker</button>
+      <button class="report-card-btn" id="report-btn-third">Quartely Public Perception Comparison by Industry Opinion</button>
     </div>
   </div>
 
@@ -202,6 +203,7 @@
       <select id="report-select-dropdown">
         <option value="main">Annual Quantitative Employee Dashboard</option>
         <option value="second">Quarterly Public Perception Tracker</option>
+        <option value="third">Quartely Public Perception Comparison by Industry Opinion</option>
       </select>
       <button class="topbar-btn back" id="back-btn">Back</button>
       <button class="topbar-btn fullscreen" id="fullscreen-btn">Full Screen</button>
@@ -230,12 +232,14 @@
     // Power BI Links
     const powerBiLinks = {
       main: "https://app.powerbi.com/view?r=eyJrIjoiMTI0NjY0NjItMDhlMS00ZDFhLWIzODEtMDYzZTZkNmZkY2UyIiwidCI6ImY5ZmRkNTYwLTY2MzctNDFkZS1hYmNhLWY1OWZhM2YwNzdiZSIsImMiOjR9",
-      second: "https://app.powerbi.com/view?r=eyJrIjoiNzQ3M2RlNjMtZDE5NS00YWNmLWJmZTYtZGQxMzhjMTJlNDExIiwidCI6ImY5ZmRkNTYwLTY2MzctNDFkZS1hYmNhLWY1OWZhM2YwNzdiZSIsImMiOjR9"
+      second: "https://app.powerbi.com/view?r=eyJrIjoiNzQ3M2RlNjMtZDE5NS00YWNmLWJmZTYtZGQxMzhjMTJlNDExIiwidCI6ImY5ZmRkNTYwLTY2MzctNDFkZS1hYmNhLWY1OWZhM2YwNzdiZSIsImMiOjR9",
+      third:  "https://app.powerbi.com/view?r=eyJrIjoiMDhlYzRkN2QtODkzOC00MDlmLWI2ZDUtYmQ2OGJhMTEyNWJmIiwidCI6ImY5ZmRkNTYwLTY2MzctNDFkZS1hYmNhLWY1OWZhM2YwNzdiZSIsImMiOjR9"
     };
     // Report Names
     const reportNames = {
       main: "Annual Quantitative Employee Dashboard",
-      second: "Quarterly Public Perception Tracker"
+      second: "Quarterly Public Perception Tracker",
+      third: "Quartely Public Perception Comparison by Industry Opinion"
     };
 
     // Elements
@@ -251,6 +255,7 @@
     const backBtn = document.getElementById("back-btn");
     const reportBtnMain = document.getElementById("report-btn-main");
     const reportBtnSecond = document.getElementById("report-btn-second");
+    const reportBtnThird = document.getElementById("report-btn-third");
     const reportSelectDropdown = document.getElementById("report-select-dropdown");
     const reportNameSpan = document.getElementById("report-name");
     const powerBiFrame = document.getElementById("powerbi-frame");
@@ -338,6 +343,32 @@
         powerBiFrame.msRequestFullscreen();
       }
     };
+
+    // Back button to report selection screen
+    backBtn.onclick = function() {
+      reportViewContainer.classList.add("hidden");
+      selectReportContainer.classList.remove("hidden");
+      powerBiFrame.src = "";
+    };
+
+    // Dropdown to toggle between reports (when viewing)
+    reportSelectDropdown.onchange = function() {
+      const selectedKey = reportSelectDropdown.value;
+      reportNameSpan.textContent = reportNames[selectedKey];
+      powerBiFrame.src = powerBiLinks[selectedKey];
+    };
+
+    // When a report is selected from selection screen
+    function showReportView(reportKey) {
+      selectReportContainer.classList.add("hidden");
+      reportViewContainer.classList.remove("hidden");
+      reportSelectDropdown.value = reportKey;
+      reportNameSpan.textContent = reportNames[reportKey];
+      powerBiFrame.src = powerBiLinks[reportKey];
+    }
+    reportBtnMain.onclick = function() { showReportView("main"); }
+    reportBtnSecond.onclick = function() { showReportView("second"); }
+    reportBtnThird.onclick = function() { showReportView("third"); }
 
     // Forgot Password
     forgotPasswordLink.onclick = function(e) {
@@ -431,32 +462,6 @@
         removeActivityListeners();
       }
     });
-
-    // When a report is selected from selection screen
-    function showReportView(reportKey) {
-      selectReportContainer.classList.add("hidden");
-      reportViewContainer.classList.remove("hidden");
-      reportSelectDropdown.value = reportKey;
-      reportNameSpan.textContent = reportNames[reportKey];
-      powerBiFrame.src = powerBiLinks[reportKey];
-    }
-    reportBtnMain.onclick = function() { showReportView("main"); }
-    reportBtnSecond.onclick = function() { showReportView("second"); }
-
-    // Back button to report selection screen
-    backBtn.onclick = function() {
-      reportViewContainer.classList.add("hidden");
-      selectReportContainer.classList.remove("hidden");
-      powerBiFrame.src = "";
-    };
-
-    // Dropdown to toggle between reports (when viewing)
-    reportSelectDropdown.onchange = function() {
-      const selectedKey = reportSelectDropdown.value;
-      reportNameSpan.textContent = reportNames[selectedKey];
-      powerBiFrame.src = powerBiLinks[selectedKey];
-    };
-
   </script>
 </body>
 </html>
